@@ -15,7 +15,6 @@ struct ContentView: View {
         ZStack {
             if isOnboardingViewActive { OnboardingView() } else { HomeView() }
         }
-        .padding()
     }
 }
 

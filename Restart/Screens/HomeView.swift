@@ -13,13 +13,39 @@ struct HomeView: View {
     
     var body: some View {
         VStack(spacing: 20) {
-            Text("Home")
-                .font(.largeTitle)
+            Spacer()
+            
+            ZStack {
+                CircleGroupView(shapeColour: .gray, shapeOpacity: 0.1)
+                Image("character-2")
+                    .resizable()
+                    .scaledToFit()
+                    .padding()
+            }
+            
+            Text("The time that leads to mastery is dependent on our focus.")
+                .font(.title3)
+                .fontWeight(.light)
+                .foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
+                .padding()
+            
+            Spacer()
+            
             Button {
                 isOnboardingViewActive = true
             } label: {
+                Image(systemName:"arrow.triangle.2.circlepath.circle.fill")
+                    .imageScale(.large)
+                
                 Text("Restart")
+                    .font(.title3)
+                    .fontDesign(.rounded)
+                    .fontWeight(.bold)
             }
+            .buttonStyle(.borderedProminent)
+            .clipShape(Capsule())
+            .controlSize(.large)
         }
     }
 }
