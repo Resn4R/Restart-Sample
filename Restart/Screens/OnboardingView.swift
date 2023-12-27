@@ -17,6 +17,11 @@ struct OnboardingView: View {
     @State private var isAnimating = false
     
     @State private var imageOffset: CGSize = .zero
+    
+    @State private var indicatorOpacity = 1.0
+    
+    @State private var textTitle = "Share."
+    
     var body: some View {
         ZStack {
             Color.colorBlue
@@ -28,10 +33,11 @@ struct OnboardingView: View {
                 VStack(spacing: 0) {
                     //MARK: HEADER
                     
-                    Text("Share.")
+                    Text(textTitle)
                         .font(.system(size: 60))
                         .fontWeight(.heavy)
                         .foregroundStyle(.white)
+                        .transition(.opacity)
                     
                     Text("""
                     It's not how much we give but
@@ -68,14 +74,33 @@ struct OnboardingView: View {
                                     if abs(imageOffset.width) <= 150 {
                                         imageOffset = gesture.translation
                                     }
+                                    
+                                    withAnimation(.linear(duration: 0.25)){
+                                        indicatorOpacity = 0
+                                        textTitle = "Give."
+                                    }
                                 }
                                 .onEnded{ _ in
                                     imageOffset = .zero
+                                    
+                                    withAnimation(.linear(duration: 0.25)) {
+                                        indicatorOpacity = 1
+                                        textTitle = "Share."
+                                    }
                                 }
                         )
                         .animation(.easeOut(duration: 1), value: imageOffset)
                 } //: Body
-
+                .overlay(
+                    Image(systemName: "arrow.left.and.right.circle")
+                        .font(.system(size: 44, weight: .ultraLight))
+                        .foregroundStyle(.white)
+                        .offset(y: 20)
+                        .opacity(isAnimating ? 1: 0)
+                        .animation(.easeOut(duration: 1).delay(2), value: isAnimating)
+                        .opacity(indicatorOpacity)
+                    , alignment: .bottom
+                )
                 Spacer()
                 //MARK: FOOTER
                 
