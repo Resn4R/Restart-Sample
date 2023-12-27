@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import CoreMotion
 
 struct OnboardingView: View {
     
@@ -16,13 +17,27 @@ struct OnboardingView: View {
     
     @State private var isAnimating = false
     
-    @State private var imageOffset: CGSize = .zero
+   //@State private var imageOffset: CGSize = .zero
+    @State private var imageOffset: CGFloat = 0
     
     @State private var indicatorOpacity = 1.0
     
     @State private var textTitle = "Share."
     
     let hapticFeedback = UINotificationFeedbackGenerator()
+    
+    @State private var motionManager = CMMotionManager()
+    @State private var motionY: Double = 0
+    
+    func startMotion(){
+        motionManager.startGyroUpdates(to: .main) { (data, _) in
+            motionManager.gyroUpdateInterval = 0.001
+            
+            motionY = -(data?.rotationRate.y ?? 0)
+            
+            imageOffset = CGFloat(motionY * 25)
+        }
+    }
     
     var body: some View {
         ZStack {
@@ -31,7 +46,7 @@ struct OnboardingView: View {
             
             VStack(spacing: 20) {
                 Spacer()
-
+                
                 VStack(spacing: 0) {
                     //MARK: HEADER
                     
@@ -60,8 +75,8 @@ struct OnboardingView: View {
                 //MARK: BODY
                 ZStack{
                     CircleGroupView(shapeColour: .white, shapeOpacity: 0.2)
-                        .offset(x:imageOffset.width * -1)
-                        .blur(radius: abs(imageOffset.width/5))
+                        .offset(x:imageOffset * -1)
+                        .blur(radius: abs(imageOffset/5))
                         .animation(.easeOut(duration: 1), value: imageOffset)
                     
                     Image("character-1")
@@ -69,13 +84,15 @@ struct OnboardingView: View {
                         .scaledToFit()
                         .opacity(isAnimating ? 1 : 0)
                         .animation(.easeOut(duration: 0.5), value: isAnimating)
-                        .offset(x:imageOffset.width * 1.2, y: 0)
-                        .rotationEffect(.degrees(Double(imageOffset.width/20)))
+                        .offset(x:imageOffset)
+                        .rotationEffect(.degrees(Double(imageOffset/20)))
                         .gesture(
                             DragGesture()
                                 .onChanged { gesture in
-                                    if abs(imageOffset.width) <= 150 {
-                                        imageOffset = gesture.translation
+                                    motionManager.stopGyroUpdates()
+                                    
+                                    if abs(imageOffset) <= 150 {
+                                        imageOffset = gesture.translation.width
                                     }
                                     
                                     withAnimation(.linear(duration: 0.25)){
@@ -84,7 +101,9 @@ struct OnboardingView: View {
                                     }
                                 }
                                 .onEnded{ _ in
-                                    imageOffset = .zero
+                                    imageOffset = 0
+                                    
+                                    startMotion()
                                     
                                     withAnimation(.linear(duration: 0.25)) {
                                         indicatorOpacity = 1
@@ -104,9 +123,10 @@ struct OnboardingView: View {
                         .opacity(indicatorOpacity)
                     , alignment: .bottom
                 )
-                Spacer()
-                //MARK: FOOTER
                 
+                Spacer()
+                
+                //MARK: FOOTER
                 ZStack {
                     Capsule()
                         .fill(Color.white.opacity(0.2))
@@ -127,16 +147,16 @@ struct OnboardingView: View {
                         Spacer()
                     }
                     
-                   HStack {
-                       ZStack {
-                           Circle()
-                               .fill(Color.colorRed)
-                           Circle()
-                               .fill(.black.opacity(0.15))
-                               .padding(8)
-                           Image(systemName: "chevron.right.2")
-                               .font(.system(size: 24, weight: .bold))
-                       }
+                    HStack {
+                        ZStack {
+                            Circle()
+                                .fill(Color.colorRed)
+                            Circle()
+                                .fill(.black.opacity(0.15))
+                                .padding(8)
+                            Image(systemName: "chevron.right.2")
+                                .font(.system(size: 24, weight: .bold))
+                        }
                         .foregroundStyle(.white)
                         .frame(width: 80, height: 80, alignment: .center)
                         .offset(x: buttonOffset)
@@ -155,6 +175,9 @@ struct OnboardingView: View {
                                             playSound("chimeup", type: "mp3")
                                             
                                             buttonOffset = buttonWidth - 80
+                                            
+                                            motionManager.stopGyroUpdates()
+                                            
                                             isOnboardingViewActive = false
                                         } else {
                                             hapticFeedback.notificationOccurred(.warning)
@@ -173,10 +196,16 @@ struct OnboardingView: View {
                 .opacity(isAnimating ? 1 : 0)
                 .offset(y: isAnimating ? 0 : 40)
                 .animation(.easeOut(duration: 1), value: isAnimating)
+                .drawingGroup()
+                
             } //: VStack
         } //: ZStack
         .onAppear {
             isAnimating = true
+            
+            guard motionManager.isGyroAvailable else { print("Gyro not available."); return }
+            
+            startMotion()
         }
         .preferredColorScheme(.dark)
     }
