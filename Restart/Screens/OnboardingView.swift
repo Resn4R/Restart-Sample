@@ -38,6 +38,7 @@ struct OnboardingView: View {
                         .fontWeight(.heavy)
                         .foregroundStyle(.white)
                         .transition(.opacity)
+                        .id(textTitle)
                     
                     Text("""
                     It's not how much we give but
