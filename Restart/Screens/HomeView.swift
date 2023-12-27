@@ -12,19 +12,28 @@ struct HomeView: View {
     
     @AppStorage("onboarding") var isOnboardingViewActive = false
     @State private var isAnimating = false
-    @State private var imageOffset: CGFloat = 0
+    @State private var imageOffsetX: CGFloat = 0
+    @State private var imageOffsetY: CGFloat = 0
     
     @State private var motionManager = CMMotionManager()
     @State private var motionX: Double = 0
+    @State private var motionY: Double = 0
     
     func startMotion(){
-        motionManager.startGyroUpdates(to: .main) { (data, _) in
-            motionManager.gyroUpdateInterval = 0.001
-            
-            motionX = -(data?.rotationRate.x ?? 0)
-            
-            imageOffset = CGFloat(motionX * 25)
-        }
+            motionManager.startGyroUpdates(to: .main) { (data, _) in
+                motionManager.gyroUpdateInterval = 0.001
+                                
+                imageOffsetY = CGFloat(-(data?.rotationRate.x ?? 0) * 25)
+                imageOffsetX = CGFloat(-(data?.rotationRate.y ?? 0) * 25)
+            }
+    }
+    
+    func lowPassFilter(current: CMRotationRate, previous: CMRotationRate) -> CMRotationRate {
+        let alpha = 0.95
+        let x = alpha * previous.x + (1 - alpha) * current.x
+        let y = alpha * previous.y + (1 - alpha) * current.y
+        let z = alpha * previous.z + (1 - alpha) * current.z
+        return CMRotationRate(x: x, y: y, z: z)
     }
     
     var body: some View {
@@ -33,14 +42,14 @@ struct HomeView: View {
             
             ZStack {
                 CircleGroupView(shapeColour: .gray, shapeOpacity: 0.1)
-                    .offset(y: -imageOffset)
+                    .offset(x: -imageOffsetX, y: -imageOffsetY)
 
                 
                 Image("character-2")
                     .resizable()
                     .scaledToFit()
                     .padding()
-                    .offset(y: isAnimating ? 35 + imageOffset : -35 + imageOffset)
+                    .offset(x: imageOffsetX,y: isAnimating ? 35 + imageOffsetY : -35 + imageOffsetY)
                     .animation(
                         Animation
                             .easeInOut(duration: 4)
@@ -80,6 +89,8 @@ struct HomeView: View {
         }
         .onAppear {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.5, execute: { isAnimating = true })
+            
+            guard motionManager.isGyroAvailable else { print("Gyro not available."); return }
             startMotion()
         }
     }
