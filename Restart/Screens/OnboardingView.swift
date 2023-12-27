@@ -16,6 +16,7 @@ struct OnboardingView: View {
     
     @State private var isAnimating = false
     
+    @State private var imageOffset: CGSize = .zero
     var body: some View {
         ZStack {
             Color.colorBlue
@@ -50,13 +51,31 @@ struct OnboardingView: View {
                 //MARK: BODY
                 ZStack{
                     CircleGroupView(shapeColour: .white, shapeOpacity: 0.2)
+                        .offset(x:imageOffset.width * -1)
+                        .blur(radius: abs(imageOffset.width/5))
+                        .animation(.easeOut(duration: 1), value: imageOffset)
+                    
                     Image("character-1")
                         .resizable()
                         .scaledToFit()
                         .opacity(isAnimating ? 1 : 0)
                         .animation(.easeOut(duration: 0.5), value: isAnimating)
+                        .offset(x:imageOffset.width * 1.2, y: 0)
+                        .rotationEffect(.degrees(Double(imageOffset.width/20)))
+                        .gesture(
+                            DragGesture()
+                                .onChanged { gesture in
+                                    if abs(imageOffset.width) <= 150 {
+                                        imageOffset = gesture.translation
+                                    }
+                                }
+                                .onEnded{ _ in
+                                    imageOffset = .zero
+                                }
+                        )
+                        .animation(.easeOut(duration: 1), value: imageOffset)
                 } //: Body
-                
+
                 Spacer()
                 //MARK: FOOTER
                 
